@@ -6,21 +6,51 @@
             var ws;
 
             function startWebSocket() {
+                var data = {};
                 ws = new WebSocket('ws://localhost:8080');
 
                 ws.onopen = function(event) {
                     console.log('WebSocket connection opened');
+                    data = {}
                 };
 
                 ws.onmessage = function(event) {
+
+                    // console.log(pose_data) // なぜかこれが空にならない
+
                     var msg = event.data;
                     console.log('Received message: ' + msg);
                     var element = document.getElementById('messages');
                     element.innerHTML += msg + '<br />';
+
+                    // メッセージをパース
+                    let message = event.data;
+                    let parts = message.replace(/[\('"\)]/g, "").split(',').map(part => part.trim());
+                    let name = parts[0];
+                    let position = [parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3])];
+                    let rotation = [parseFloat(parts[4]), parseFloat(parts[5]), parseFloat(parts[6]), parseFloat(parts[7])];
+
+                    // 新しいデータオブジェクトを作成
+                    data[name] = {
+                        position: position,
+                        rotation: rotation
+                    };
+
+                    // 次のRootデータが来たら、現在のデータを出力してリセット
+                    if (name == 'root' && Object.keys(data).length > 1) {
+                        console.log(data);
+                        data = {};
+                        data[name] = {
+                            position: position,
+                            rotation: rotation
+                        };
+                    }
+
                 };
 
                 ws.onclose = function(event) {
                     console.log('WebSocket connection closed');
+                    data = {}
                 };
             }
 
